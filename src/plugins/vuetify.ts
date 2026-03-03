@@ -33,10 +33,16 @@ export default createVuetify({
   defaults: {
     VBtn: {
       rounded: 'xl',
+      size: 'large',
+      height: 46,
     },
     VCard: {
       rounded: 'xl',
       elevation: 0,
+    },
+    VAlert: {
+      rounded: 'xl',
+      border: 'start',
     },
     VSheet: {
       rounded: 'xl',

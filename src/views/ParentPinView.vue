@@ -16,7 +16,7 @@
         <template v-if="store.hasParentPin">
           <v-text-field v-model="pin" autocomplete="one-time-code" label="Parent PIN" maxlength="12" type="password" />
           <div class="d-flex justify-space-between ga-3 flex-wrap">
-            <v-btn variant="text" @click="router.push('/')">Cancel</v-btn>
+            <v-btn variant="outlined" @click="router.push('/')">Cancel</v-btn>
             <v-btn color="primary" prepend-icon="mdi-lock-open-outline" variant="flat" @click="login">Open parent mode</v-btn>
           </div>
         </template>
@@ -25,7 +25,7 @@
           <v-text-field v-model="pin" label="Create parent PIN" maxlength="12" type="password" />
           <v-text-field v-model="confirmPin" label="Confirm PIN" maxlength="12" type="password" />
           <div class="d-flex justify-space-between ga-3 flex-wrap">
-            <v-btn variant="text" @click="router.push('/')">Cancel</v-btn>
+            <v-btn variant="outlined" @click="router.push('/')">Cancel</v-btn>
             <v-btn color="primary" prepend-icon="mdi-shield-key-outline" variant="flat" @click="createPin">Save PIN</v-btn>
           </div>
         </template>
@@ -53,7 +53,7 @@ const copy = computed(() =>
 )
 
 function resolveNextRoute(): string {
-  return typeof route.query.next === 'string' ? route.query.next : '/parent/approvals'
+  return typeof route.query.next === 'string' ? route.query.next : '/parent/dashboard'
 }
 
 function login(): void {

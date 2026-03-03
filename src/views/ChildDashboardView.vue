@@ -12,10 +12,10 @@
                 Finish a chore, send it in, and wait for a parent thumbs-up before the points count.
               </p>
               <div class="d-flex flex-wrap ga-3 mt-5">
-                <v-btn color="primary" prepend-icon="mdi-rocket-launch-outline" size="x-large" @click="dialogOpen = true">
+                <v-btn color="primary" prepend-icon="mdi-rocket-launch-outline" @click="dialogOpen = true">
                   Log Completed Chore
                 </v-btn>
-                <v-chip class="child-reward-chip" color="accent" prepend-icon="mdi-gift-outline" size="large" variant="flat">
+                <v-chip class="child-reward-chip" color="accent" prepend-icon="mdi-gift-outline" size="large" variant="outlined">
                   {{ rewardGoalLabel }}
                 </v-chip>
               </div>
@@ -110,7 +110,7 @@
           <v-alert v-if="!store.chores.length" type="info" variant="tonal">
             Your parent needs to add chores before you can log them here.
           </v-alert>
-          <v-btn v-else block color="secondary" prepend-icon="mdi-plus-circle-outline" size="large" variant="flat" @click="dialogOpen = true">
+          <v-btn v-else block color="secondary" prepend-icon="mdi-plus-circle-outline" variant="flat" @click="dialogOpen = true">
             Open chore chooser
           </v-btn>
         </v-sheet>
@@ -125,7 +125,7 @@
               <div class="text-overline">Pending approval</div>
               <div class="text-h5 font-weight-bold">Sent to parent</div>
             </div>
-            <v-chip color="warning" variant="flat">{{ store.currentMonthPendingSubmissions.length }} pending</v-chip>
+            <v-chip color="warning" variant="outlined">{{ store.currentMonthPendingSubmissions.length }} pending</v-chip>
           </div>
 
           <div v-if="store.currentMonthPendingSubmissions.length" class="child-ticket-stack">
@@ -151,7 +151,7 @@
               <div class="text-overline">Recent activity</div>
               <div class="text-h5 font-weight-bold">This month</div>
             </div>
-            <v-chip color="secondary" variant="flat">{{ store.childRecentSubmissions.length }} recent</v-chip>
+            <v-chip color="secondary" variant="outlined">{{ store.childRecentSubmissions.length }} recent</v-chip>
           </div>
 
           <div v-if="store.childRecentSubmissions.length" class="child-activity-stack">

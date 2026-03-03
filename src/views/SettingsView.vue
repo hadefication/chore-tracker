@@ -38,10 +38,10 @@
       </v-row>
 
       <div class="d-flex flex-wrap justify-space-between ga-3 mt-4">
-        <v-btn color="error" prepend-icon="mdi-restart" variant="text" @click="confirmReset = true">Reset current month</v-btn>
+        <v-btn color="error" prepend-icon="mdi-restart" variant="outlined" @click="confirmReset = true">Reset current month</v-btn>
         <div class="d-flex ga-3">
-          <v-btn color="secondary" prepend-icon="mdi-logout" variant="tonal" @click="logout">Exit parent mode</v-btn>
-          <v-btn color="primary" prepend-icon="mdi-content-save-outline" @click="saveSettings">Save settings</v-btn>
+          <v-btn color="secondary" prepend-icon="mdi-logout" variant="outlined" @click="logout">Exit parent mode</v-btn>
+          <v-btn color="primary" prepend-icon="mdi-content-save-outline" variant="flat" @click="saveSettings">Save settings</v-btn>
         </div>
       </div>
     </v-card>
@@ -53,8 +53,8 @@
           This clears every current-month submission, including pending and approved ones. Past months stay intact.
         </v-card-text>
         <v-card-actions class="justify-space-between px-5 pb-4">
-          <v-btn variant="text" @click="confirmReset = false">Cancel</v-btn>
-          <v-btn color="error" @click="resetMonth">Reset month</v-btn>
+          <v-btn variant="outlined" @click="confirmReset = false">Cancel</v-btn>
+          <v-btn color="error" variant="flat" @click="resetMonth">Reset month</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>

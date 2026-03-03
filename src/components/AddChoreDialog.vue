@@ -52,7 +52,7 @@
       <v-divider />
 
       <v-card-actions class="px-5 py-4 justify-space-between">
-        <v-btn variant="text" @click="close">Cancel</v-btn>
+        <v-btn variant="outlined" @click="close">Cancel</v-btn>
         <v-btn :disabled="!canSave" color="primary" prepend-icon="mdi-send-outline" variant="flat" @click="submitChore">
           Send for approval
         </v-btn>

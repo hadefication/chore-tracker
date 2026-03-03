@@ -24,7 +24,7 @@
       <v-divider />
       <v-card-actions class="px-5 py-4 justify-space-between">
         <v-chip color="secondary" variant="tonal">{{ totalPoints }} points</v-chip>
-        <v-btn variant="text" @click="emit('update:modelValue', false)">Close</v-btn>
+        <v-btn variant="outlined" @click="emit('update:modelValue', false)">Close</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

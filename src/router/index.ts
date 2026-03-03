@@ -5,10 +5,12 @@ import HistoryView from '../views/HistoryView.vue'
 import LibraryView from '../views/LibraryView.vue'
 import MonthView from '../views/MonthView.vue'
 import ParentApprovalsView from '../views/ParentApprovalsView.vue'
+import ParentDashboardView from '../views/ParentDashboardView.vue'
 import ParentPinView from '../views/ParentPinView.vue'
 import SettingsView from '../views/SettingsView.vue'
 
 export const parentNavigationItems = [
+  { title: 'Dashboard', icon: 'mdi-view-dashboard-outline', to: '/parent/dashboard' },
   { title: 'Approvals', icon: 'mdi-check-decagram-outline', to: '/parent/approvals' },
   { title: 'Month', icon: 'mdi-calendar-month-outline', to: '/parent/month' },
   { title: 'Library', icon: 'mdi-shape-outline', to: '/parent/library' },
@@ -28,6 +30,11 @@ const router = createRouter({
       path: '/parent',
       component: ParentPinView,
       meta: { title: 'Parent' },
+    },
+    {
+      path: '/parent/dashboard',
+      component: ParentDashboardView,
+      meta: { title: 'Dashboard', parentArea: true },
     },
     {
       path: '/parent/approvals',

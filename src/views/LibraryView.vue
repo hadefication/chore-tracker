@@ -5,7 +5,7 @@
         <div class="text-overline">Library</div>
         <div class="text-h4 font-weight-bold">Parent-managed chores</div>
       </div>
-      <v-btn color="primary" prepend-icon="mdi-plus" size="large" @click="openCreateDialog">Add chore</v-btn>
+      <v-btn color="primary" prepend-icon="mdi-plus" @click="openCreateDialog">Add chore</v-btn>
     </v-sheet>
 
     <v-row v-if="store.chores.length">

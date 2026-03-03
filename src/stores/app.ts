@@ -4,6 +4,7 @@ import { clearParentSession, hasParentSession, startParentSession } from '../lib
 import { db } from '../lib/db'
 import { getCurrentMonthKey, getCurrentMonthKey as getLiveCurrentMonthKey, getMonthKeyFromDate, getTodayDateKey } from '../lib/date'
 import { createId } from '../lib/ids'
+import { createMonthlyArchiveSnapshot } from '../lib/archive'
 import { calculateMonthMetrics } from '../lib/metrics'
 import type {
   AppStateRecord,
@@ -135,19 +136,7 @@ export const useAppStore = defineStore('app', () => {
 
   function createArchiveSnapshot(month: string): MonthlyArchive {
     const profile = getMonthProfile(month)
-    const metrics = calculateMonthMetrics(approvedSubmissions.value, month, profile)
-
-    return {
-      month,
-      totalPoints: metrics.totalPoints,
-      chorePoints: metrics.chorePoints,
-      bonusPoints: metrics.bonusPoints,
-      goalTarget: metrics.goalTarget,
-      goalReached: metrics.goalReached,
-      rewardGoal: profile.rewardGoal || null,
-      longestStreak: metrics.longestStreak,
-      archivedAt: nowIso(),
-    }
+    return createMonthlyArchiveSnapshot(approvedSubmissions.value, month, profile, nowIso())
   }
 
   async function loadState(): Promise<void> {

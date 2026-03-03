@@ -9,14 +9,14 @@
             <v-icon :icon="isParentArea ? 'mdi-clipboard-check-outline' : 'mdi-star-four-points-circle-outline'" />
           </v-avatar>
           <div>
-            <div class="app-mark-label">{{ isParentArea ? 'Parent Station' : 'Kid Mode' }}</div>
+            <div v-if="isParentArea" class="app-mark-label">Parent Station</div>
             <div class="app-mark-title">{{ title }}</div>
           </div>
         </div>
       </template>
 
       <template #append>
-        <v-chip v-if="isParentArea" class="mr-2 d-none d-sm-inline-flex app-mode-chip" color="secondary" variant="flat">
+        <v-chip v-if="isParentArea" class="mr-2 d-none d-sm-inline-flex app-mode-chip" color="secondary" variant="outlined">
           Approval locked
         </v-chip>
         <v-btn

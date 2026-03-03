@@ -19,8 +19,8 @@
       </v-card-text>
       <v-divider />
       <v-card-actions class="px-5 py-4 justify-space-between">
-        <v-btn variant="text" @click="emit('update:modelValue', false)">Cancel</v-btn>
-        <v-btn color="primary" prepend-icon="mdi-content-save-outline" @click="submit">Save</v-btn>
+        <v-btn variant="outlined" @click="emit('update:modelValue', false)">Cancel</v-btn>
+        <v-btn color="primary" prepend-icon="mdi-content-save-outline" variant="flat" @click="submit">Save</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
