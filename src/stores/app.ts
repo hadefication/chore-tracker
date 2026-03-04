@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { clearParentSession, hasParentSession, startParentSession } from '../lib/auth'
+import { resolveApprovedSubmissionValues, resolveLibraryChore } from '../lib/chore-utils'
 import { db } from '../lib/db'
 import { getCurrentMonthKey, getCurrentMonthKey as getLiveCurrentMonthKey, getMonthKeyFromDate, getTodayDateKey } from '../lib/date'
 import { createId } from '../lib/ids'
@@ -20,6 +21,18 @@ import type {
 
 const SETTINGS_ID = 'settings' as const
 const APP_STATE_ID = 'app-state' as const
+
+interface ProposedChoreSubmissionDraft {
+  name: string
+  points: number
+  date: string
+}
+
+interface ApproveSubmissionOptions {
+  addToLibrary?: boolean
+  choreName?: string
+  points?: number
+}
 
 function nowIso(): string {
   return new Date().toISOString()
@@ -313,6 +326,7 @@ export const useAppStore = defineStore('app', () => {
     const timestamp = nowIso()
     const submission: ChoreSubmission = {
       id: createId(),
+      kind: 'library',
       choreId: chore.id,
       choreName: chore.name,
       points: chore.defaultPoints,
@@ -327,20 +341,82 @@ export const useAppStore = defineStore('app', () => {
     submissions.value = sortSubmissions([...submissions.value, submission])
   }
 
-  async function approveSubmission(submissionId: string): Promise<void> {
+  async function submitProposedChore(draft: ProposedChoreSubmissionDraft): Promise<void> {
+    const name = draft.name.trim().replace(/\s+/g, ' ')
+    if (!name) {
+      throw new Error('Chore name is required.')
+    }
+
+    const points = validatePositiveNumber(draft.points, 'Points')
+    if (draft.date > getTodayDateKey()) {
+      throw new Error('Only today or past dates are allowed.')
+    }
+
+    const month = getMonthKeyFromDate(draft.date)
+    await ensureMonthProfile(month)
+
+    const timestamp = nowIso()
+    const submission: ChoreSubmission = {
+      id: createId(),
+      kind: 'proposed',
+      choreId: null,
+      choreName: name,
+      points,
+      date: draft.date,
+      status: 'pending',
+      submittedAt: timestamp,
+      reviewedAt: null,
+      updatedAt: timestamp,
+    }
+
+    await db.submissions.put(submission)
+    submissions.value = sortSubmissions([...submissions.value, submission])
+  }
+
+  async function approveSubmission(submissionId: string, options: ApproveSubmissionOptions = {}): Promise<void> {
     const existing = submissions.value.find((entry) => entry.id === submissionId)
     if (!existing || existing.status === 'approved') {
       return
     }
 
-    const next: ChoreSubmission = {
-      ...existing,
-      status: 'approved',
-      reviewedAt: nowIso(),
-      updatedAt: nowIso(),
+    const reviewedAt = nowIso()
+    const approvedValues = resolveApprovedSubmissionValues(existing.kind, existing.choreName, existing.points, options)
+    const approvedName = approvedValues.choreName
+    const approvedPoints = existing.kind === 'proposed' ? validatePositiveNumber(approvedValues.points, 'Points') : approvedValues.points
+
+    if (existing.kind === 'proposed' && !approvedName) {
+      throw new Error('Chore name is required.')
     }
 
-    await db.submissions.put(next)
+    let linkedChore: Chore | null = null
+    let createdChore: Chore | null = null
+
+    if (existing.kind === 'proposed' && options.addToLibrary) {
+      const resolution = resolveLibraryChore(chores.value, approvedName, approvedPoints, reviewedAt, createId)
+      linkedChore = resolution.linkedChore
+      createdChore = resolution.createdChore
+    }
+
+    const next: ChoreSubmission = {
+      ...existing,
+      choreId: linkedChore?.id ?? existing.choreId,
+      choreName: linkedChore?.name ?? approvedName,
+      points: approvedPoints,
+      status: 'approved',
+      reviewedAt,
+      updatedAt: reviewedAt,
+    }
+
+    if (createdChore) {
+      await db.transaction('rw', db.chores, db.submissions, async () => {
+        await db.chores.put(createdChore)
+        await db.submissions.put(next)
+      })
+      chores.value = sortChores([...chores.value, createdChore])
+    } else {
+      await db.submissions.put(next)
+    }
+
     submissions.value = sortSubmissions(submissions.value.map((entry) => (entry.id === submissionId ? next : entry)))
     await syncArchiveForMonth(getMonthKeyFromDate(next.date))
   }
@@ -462,6 +538,7 @@ export const useAppStore = defineStore('app', () => {
     updateChore,
     deleteChore,
     submitChore,
+    submitProposedChore,
     approveSubmission,
     rejectSubmission,
     updateSettings,

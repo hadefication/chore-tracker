@@ -9,7 +9,8 @@
               <div class="child-month-pill">{{ monthLabel }}</div>
               <h1 class="child-title">{{ headline }}</h1>
               <p class="child-subtitle">
-                Finish a chore, send it in, and wait for a parent thumbs-up before the points count.
+                Finish a chore, send it in, and wait for a parent thumbs-up before the points count. If it is not in the
+                library yet, propose it.
               </p>
               <div class="d-flex flex-wrap ga-3 mt-5">
                 <v-btn color="primary" prepend-icon="mdi-rocket-launch-outline" @click="dialogOpen = true">
@@ -108,7 +109,7 @@
           </div>
 
           <v-alert v-if="!store.chores.length" type="info" variant="tonal">
-            Your parent needs to add chores before you can log them here.
+            No library chores yet. Open the chooser to propose a new one.
           </v-alert>
           <v-btn v-else block color="secondary" prepend-icon="mdi-plus-circle-outline" variant="flat" @click="dialogOpen = true">
             Open chore chooser

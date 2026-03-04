@@ -27,6 +27,25 @@ class ChoreTrackerDatabase extends Dexie {
       appState: 'id',
       monthProfiles: 'month, updatedAt',
     })
+
+    this.version(2)
+      .stores({
+        chores: 'id, name, updatedAt',
+        submissions: 'id, date, choreId, kind, status, submittedAt',
+        monthlyArchive: 'month, archivedAt',
+        settings: 'id',
+        appState: 'id',
+        monthProfiles: 'month, updatedAt',
+      })
+      .upgrade(async (tx) => {
+        await tx
+          .table('submissions')
+          .toCollection()
+          .modify((submission) => {
+            submission.kind = submission.kind ?? 'library'
+            submission.choreId = submission.choreId ?? null
+          })
+      })
   }
 }
 

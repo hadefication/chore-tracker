@@ -16,6 +16,7 @@ const profile: MonthProfile = {
 function submission(overrides: Partial<ChoreSubmission>): ChoreSubmission {
   return {
     id: overrides.id ?? crypto.randomUUID(),
+    kind: overrides.kind ?? 'library',
     choreId: overrides.choreId ?? 'chore-1',
     choreName: overrides.choreName ?? 'Made bed',
     points: overrides.points ?? 2,

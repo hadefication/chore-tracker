@@ -19,6 +19,7 @@ Date: 2026-03-04
   - positive points
   - a date that is today or in the past
 - Approving a proposed chore always approves the submission itself so the points count for the selected date
+- Parents can adjust the proposed chore name and point value during approval before the submission is finalized
 - Adding a proposed chore to the library is optional and happens only when the parent selects that option
 - Library matching uses a normalized name comparison:
   - trim leading and trailing whitespace
@@ -70,8 +71,12 @@ Notes:
 
 - Keep one queue in the approvals screen
 - Visually distinguish proposed chores from library submissions
-- For proposed chores, show an `Add to library` option before approval
+- For proposed chores, `Approve` opens a modal with editable:
+  - chore name
+  - points
+  - `Add to library` option
 - Approval behavior:
+  - the approved submission stores the parent-edited name and points
   - with `Add to library` enabled:
     - find an existing chore by normalized name
     - reuse it if found
@@ -92,6 +97,7 @@ Notes:
 - Child can submit a proposed chore with name, points, and past or current date
 - Future dates are rejected for both library and proposed submissions
 - Approving a proposed chore without library add counts points but does not create a chore
+- Approving a proposed chore with parent-edited values stores the edited name and points on the approved submission
 - Approving a proposed chore with library add creates a chore when no normalized-name match exists
 - Approving a proposed chore with library add reuses the existing library chore when the normalized name matches
 - Reusing a chore does not overwrite the library chore's default points

@@ -6,11 +6,13 @@ export interface Chore {
   updatedAt: string
 }
 
+export type SubmissionKind = 'library' | 'proposed'
 export type SubmissionStatus = 'pending' | 'approved' | 'rejected'
 
 export interface ChoreSubmission {
   id: string
-  choreId: string
+  kind: SubmissionKind
+  choreId: string | null
   choreName: string
   points: number
   date: string

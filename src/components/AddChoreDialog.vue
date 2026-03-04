@@ -17,6 +17,14 @@
         </v-alert>
 
         <div class="mb-5">
+          <div class="text-overline">How do you want to log it?</div>
+          <v-btn-toggle v-model="mode" class="mt-3" color="primary" divided mandatory>
+            <v-btn value="library">From library</v-btn>
+            <v-btn value="proposed">Propose new</v-btn>
+          </v-btn-toggle>
+        </div>
+
+        <div v-if="mode === 'library'" class="mb-5">
           <div class="text-overline">Choose a chore</div>
           <div class="text-h6 font-weight-bold mb-3">Tap what you finished</div>
 
@@ -38,8 +46,22 @@
           </div>
 
           <v-alert v-if="!chores.length" class="mt-4" type="info" variant="tonal">
-            Ask your parent to add chores to the library first.
+            No library chores yet. Switch to <strong>Propose new</strong> to send one for approval.
           </v-alert>
+        </div>
+
+        <div v-else class="mb-5">
+          <div class="text-overline">Propose a new chore</div>
+          <div class="text-h6 font-weight-bold mb-3">Tell your parent what you finished</div>
+
+          <v-row>
+            <v-col cols="12" md="8">
+              <v-text-field v-model="proposedName" label="Chore name" />
+            </v-col>
+            <v-col cols="12" md="4">
+              <v-text-field v-model="proposedPoints" label="Points" min="1" step="1" type="number" />
+            </v-col>
+          </v-row>
         </div>
 
         <div>
@@ -66,6 +88,8 @@ import { computed, ref, watch } from 'vue'
 import { getTodayDateKey } from '../lib/date'
 import { useAppStore } from '../stores/app'
 
+type SubmissionMode = 'library' | 'proposed'
+
 const props = defineProps<{
   modelValue: boolean
 }>()
@@ -75,19 +99,36 @@ const emit = defineEmits<{
 }>()
 
 const store = useAppStore()
+const mode = ref<SubmissionMode>('library')
 const selectedChoreId = ref('')
+const proposedName = ref('')
+const proposedPoints = ref('1')
 const date = ref(getTodayDateKey())
 const errorMessage = ref('')
 
 const chores = computed(() => store.chores)
 const today = getTodayDateKey()
-const canSave = computed(() => Boolean(selectedChoreId.value) && date.value <= today)
+const canSave = computed(() => {
+  if (date.value > today) {
+    return false
+  }
+
+  if (mode.value === 'library') {
+    return Boolean(selectedChoreId.value)
+  }
+
+  return Boolean(proposedName.value.trim()) && Number(proposedPoints.value) > 0
+})
 
 watch(
   () => props.modelValue,
   (open) => {
     if (open) {
       errorMessage.value = ''
+      mode.value = store.chores.length ? 'library' : 'proposed'
+      selectedChoreId.value = ''
+      proposedName.value = ''
+      proposedPoints.value = '1'
       date.value = getTodayDateKey()
     }
   },
@@ -100,7 +141,15 @@ function close(): void {
 async function submitChore(): Promise<void> {
   try {
     errorMessage.value = ''
-    await store.submitChore(selectedChoreId.value, date.value)
+    if (mode.value === 'library') {
+      await store.submitChore(selectedChoreId.value, date.value)
+    } else {
+      await store.submitProposedChore({
+        name: proposedName.value,
+        points: Number(proposedPoints.value),
+        date: date.value,
+      })
+    }
     close()
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : 'Unable to submit chore.'
