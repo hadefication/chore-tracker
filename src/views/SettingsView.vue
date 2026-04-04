@@ -46,6 +46,38 @@
       </div>
     </v-card>
 
+    <v-card class="app-surface pa-5 mt-5">
+      <div class="text-overline mb-2">Data management</div>
+      <p class="text-body-2 opacity-80 mb-4">
+        Export all chore data as a JSON backup or import a previous backup to restore.
+      </p>
+
+      <v-alert v-if="backupMessage" class="mb-4" :type="backupMessageType" variant="tonal">{{ backupMessage }}</v-alert>
+
+      <div class="d-flex flex-wrap ga-3">
+        <v-btn color="primary" prepend-icon="mdi-download" variant="outlined" :loading="exporting" @click="handleExport">
+          Export backup
+        </v-btn>
+        <v-btn color="warning" prepend-icon="mdi-upload" variant="outlined" @click="triggerImport">
+          Import backup
+        </v-btn>
+        <input ref="fileInput" accept=".json" class="d-none" type="file" @change="handleImport" />
+      </div>
+    </v-card>
+
+    <v-dialog v-model="confirmImport" max-width="420">
+      <v-card>
+        <v-card-title class="text-h6 font-weight-bold">Replace all data?</v-card-title>
+        <v-card-text>
+          Importing will clear all current data and replace it with the backup. This cannot be undone.
+        </v-card-text>
+        <v-card-actions class="justify-space-between px-5 pb-4">
+          <v-btn variant="outlined" @click="cancelImport">Cancel</v-btn>
+          <v-btn color="warning" variant="flat" @click="confirmAndImport">Replace data</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <v-dialog v-model="confirmReset" max-width="420">
       <v-card>
         <v-card-title class="text-h6 font-weight-bold">Reset current month?</v-card-title>
@@ -64,12 +96,19 @@
 <script setup lang="ts">
 import { reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { downloadBackup, exportBackup, importBackup } from '../lib/backup'
 import { useAppStore } from '../stores/app'
 
 const store = useAppStore()
 const router = useRouter()
 const confirmReset = ref(false)
 const saveMessage = ref('')
+const exporting = ref(false)
+const confirmImport = ref(false)
+const backupMessage = ref('')
+const backupMessageType = ref<'success' | 'error'>('success')
+const fileInput = ref<HTMLInputElement | null>(null)
+const pendingFile = ref<File | null>(null)
 const form = reactive({
   kidName: '',
   rewardGoal: '',
@@ -122,5 +161,55 @@ async function resetMonth(): Promise<void> {
 function logout(): void {
   store.logoutParent()
   router.push('/')
+}
+
+async function handleExport(): Promise<void> {
+  exporting.value = true
+  try {
+    const payload = await exportBackup()
+    downloadBackup(payload)
+    backupMessageType.value = 'success'
+    backupMessage.value = `Exported ${payload.submissions.length} submissions, ${payload.chores.length} chores, ${payload.goalCycles.length} cycles.`
+  } catch {
+    backupMessageType.value = 'error'
+    backupMessage.value = 'Export failed.'
+  } finally {
+    exporting.value = false
+  }
+}
+
+function triggerImport(): void {
+  fileInput.value?.click()
+}
+
+function handleImport(event: Event): void {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  pendingFile.value = file
+  confirmImport.value = true
+  input.value = ''
+}
+
+function cancelImport(): void {
+  confirmImport.value = false
+  pendingFile.value = null
+}
+
+async function confirmAndImport(): Promise<void> {
+  confirmImport.value = false
+  const file = pendingFile.value
+  pendingFile.value = null
+  if (!file) return
+
+  try {
+    const result = await importBackup(file)
+    await store.init()
+    backupMessageType.value = 'success'
+    backupMessage.value = `Imported ${result.records} records. Data restored.`
+  } catch {
+    backupMessageType.value = 'error'
+    backupMessage.value = 'Import failed — file may be invalid.'
+  }
 }
 </script>

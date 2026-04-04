@@ -1,9 +1,15 @@
+import { execSync } from 'node:child_process'
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vuetify from 'vite-plugin-vuetify'
 import { VitePWA } from 'vite-plugin-pwa'
 
+const commitHash = execSync('git rev-parse --short HEAD').toString().trim()
+
 export default defineConfig({
+  define: {
+    __COMMIT_HASH__: JSON.stringify(commitHash),
+  },
   plugins: [
     vue(),
     vuetify({ autoImport: true }),

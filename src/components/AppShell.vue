@@ -61,6 +61,10 @@
         <span>{{ item.title }}</span>
       </v-btn>
     </v-bottom-navigation>
+
+    <v-footer app class="text-center text-caption opacity-50 justify-center pa-2">
+      Build {{ commitHash }}
+    </v-footer>
   </v-app>
 </template>
 
@@ -75,6 +79,7 @@ const router = useRouter()
 const store = useAppStore()
 const isParentArea = computed(() => route.path.startsWith('/parent') && route.path !== '/parent')
 const title = computed(() => (isParentArea.value ? 'Chore Tracker Parent' : 'Chore Quest'))
+const commitHash = __COMMIT_HASH__
 
 function leaveParentMode(): void {
   store.logoutParent()
