@@ -15,10 +15,10 @@
           <v-text-field v-model="form.kidName" label="Kid name" />
         </v-col>
         <v-col cols="12" md="6">
-          <v-text-field v-model="form.rewardGoal" label="Reward goal" />
+          <v-text-field v-model="form.rewardGoal" label="Default reward goal (for new cycles)" />
         </v-col>
         <v-col cols="12" md="4">
-          <v-text-field v-model="form.monthlyGoal" label="Monthly goal" min="1" type="number" />
+          <v-text-field v-model="form.monthlyGoal" label="Default point target (for new cycles)" min="1" type="number" />
         </v-col>
         <v-col cols="12" md="4">
           <v-text-field v-model="form.streakDaysRequired" label="Days required for bonus" min="1" type="number" />

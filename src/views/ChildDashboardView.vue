@@ -25,16 +25,16 @@
             <div class="child-medallion-wrap">
               <div class="child-medallion">
                 <v-progress-circular
-                  :model-value="progressValue"
+                  :model-value="cycleProgressValue"
                   :rotate="-90"
                   :size="210"
                   :width="18"
-                  color="primary"
+                  :color="store.cycleGoalReached ? 'success' : 'primary'"
                 >
                   <div class="text-center">
-                    <div class="text-overline">Approved</div>
-                    <div class="text-h3 font-weight-black">{{ metrics.totalPoints }}</div>
-                    <div class="text-body-2">of {{ metrics.goalTarget }}</div>
+                    <div class="text-overline">Cycle total</div>
+                    <div class="text-h3 font-weight-black">{{ store.cycleTotalPoints }}</div>
+                    <div class="text-body-2">of {{ store.activeCycle?.goalTarget ?? metrics.goalTarget }}</div>
                   </div>
                 </v-progress-circular>
               </div>
@@ -61,8 +61,8 @@
             <v-col cols="12" md="4">
               <v-card class="child-stat-card h-100 pa-4 child-stat-card-cool">
                 <div class="text-overline">Points to goal</div>
-                <div class="text-h4 font-weight-black mt-1">{{ pointsToGoal }}</div>
-                <div class="text-body-2 mt-2 opacity-80">{{ pointsToGoalCopy }}</div>
+                <div class="text-h4 font-weight-black mt-1">{{ cyclePointsToGoal }}</div>
+                <div class="text-body-2 mt-2 opacity-80">{{ cyclePointsToGoalCopy }}</div>
               </v-card>
             </v-col>
           </v-row>
@@ -173,27 +173,53 @@
       </v-col>
     </v-row>
 
+    <v-row v-if="store.completedCycles.length">
+      <v-col cols="12">
+        <v-sheet class="app-surface pa-5">
+          <TrophyShelf :cycles="store.completedCycles" :get-earned-points="store.getCycleEarnedPoints" />
+        </v-sheet>
+      </v-col>
+    </v-row>
+
     <AddChoreDialog v-model="dialogOpen" />
+
+    <GoalCelebration
+      :visible="showCelebration"
+      :reward-goal="store.activeCycle?.rewardGoal ?? ''"
+      :badge="celebrationBadge"
+      @dismiss="celebrationSeen = true"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import AddChoreDialog from '../components/AddChoreDialog.vue'
+import GoalCelebration from '../components/GoalCelebration.vue'
+import TrophyShelf from '../components/TrophyShelf.vue'
+import { computeBadgeTier } from '../lib/badges'
 import { formatMonthLabel, formatShortDate } from '../lib/date'
 import { useAppStore } from '../stores/app'
-import type { SubmissionStatus } from '../types/domain'
+import type { BadgeTier, SubmissionStatus } from '../types/domain'
 
 const store = useAppStore()
 const dialogOpen = ref(false)
+const celebrationSeen = ref(false)
 const metrics = computed(() => store.currentMonthMetrics)
 const monthLabel = computed(() => formatMonthLabel(store.currentMonth))
-const progressValue = computed(() => Math.min(100, Math.round((metrics.value.totalPoints / metrics.value.goalTarget) * 100)))
+const cycleTarget = computed(() => store.activeCycle?.goalTarget ?? metrics.value.goalTarget)
+const cycleProgressValue = computed(() => Math.min(100, Math.round((store.cycleTotalPoints / cycleTarget.value) * 100)))
 const headline = computed(() => (store.settings.kidName ? `${store.settings.kidName}'s quest board` : 'Your chore quest'))
-const rewardGoalLabel = computed(() => metrics.value.rewardGoal || 'Ask your parent to set a reward')
-const pointsToGoal = computed(() => Math.max(metrics.value.goalTarget - metrics.value.totalPoints, 0))
-const pointsToGoalCopy = computed(() => (pointsToGoal.value === 0 ? 'Goal reached. Keep going.' : `${pointsToGoal.value} approved points left.`))
+const rewardGoalLabel = computed(() => store.activeCycle?.rewardGoal || 'Ask your parent to set a reward')
+const cyclePointsToGoal = computed(() => Math.max(cycleTarget.value - store.cycleTotalPoints, 0))
+const cyclePointsToGoalCopy = computed(() => (cyclePointsToGoal.value === 0 ? 'Goal reached! Wait for your parent.' : `${cyclePointsToGoal.value} approved points left.`))
 const quickChores = computed(() => store.chores.slice(0, 4))
+const showCelebration = computed(() => store.cycleGoalReached && !celebrationSeen.value)
+const celebrationBadge = computed<BadgeTier>(() => {
+  const cycle = store.activeCycle
+  if (!cycle) return 'standard'
+  return computeBadgeTier(store.approvedSubmissions, cycle, store.getMonthProfile)
+})
 
 function statusColor(status: SubmissionStatus): string {
   if (status === 'approved') return 'success'

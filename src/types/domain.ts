@@ -87,5 +87,17 @@ export interface MonthMetrics {
   daySummaries: Record<string, DaySummary>
 }
 
+export type BadgeTier = 'standard' | 'speed-run' | 'perfect-month'
+
+export interface GoalCycle {
+  id: string
+  rewardGoal: string
+  goalTarget: number
+  startedAt: string
+  completedAt: string | null
+  startingPoints: number
+  badge: BadgeTier | null
+}
+
 export type ChoreDraft = Pick<Chore, 'name' | 'defaultPoints'>
 export type SettingsDraft = Omit<SettingsRecord, 'id'>

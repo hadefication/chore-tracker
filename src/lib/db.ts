@@ -3,6 +3,7 @@ import type {
   AppStateRecord,
   Chore,
   ChoreSubmission,
+  GoalCycle,
   MonthProfile,
   MonthlyArchive,
   SettingsRecord,
@@ -15,6 +16,7 @@ class ChoreTrackerDatabase extends Dexie {
   settings!: Table<SettingsRecord, string>
   appState!: Table<AppStateRecord, string>
   monthProfiles!: Table<MonthProfile, string>
+  goalCycles!: Table<GoalCycle, string>
 
   constructor() {
     super('chore-tracker-approval')
@@ -45,6 +47,17 @@ class ChoreTrackerDatabase extends Dexie {
             submission.kind = submission.kind ?? 'library'
             submission.choreId = submission.choreId ?? null
           })
+      })
+
+    this.version(3)
+      .stores({
+        chores: 'id, name, updatedAt',
+        submissions: 'id, date, choreId, kind, status, submittedAt',
+        monthlyArchive: 'month, archivedAt',
+        settings: 'id',
+        appState: 'id',
+        monthProfiles: 'month, updatedAt',
+        goalCycles: 'id, completedAt',
       })
   }
 }

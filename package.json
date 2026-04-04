@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@mdi/font": "^7.4.47",
+    "canvas-confetti": "^1.9.4",
     "dexie": "^4.3.0",
     "pinia": "^3.0.4",
     "vue": "^3.5.25",
@@ -19,6 +20,7 @@
     "vuetify": "^4.0.0"
   },
   "devDependencies": {
+    "@types/canvas-confetti": "^1.9.0",
     "@types/node": "^24.10.1",
     "@vitejs/plugin-vue": "^6.0.2",
     "@vue/tsconfig": "^0.8.1",

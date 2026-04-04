@@ -17,6 +17,11 @@
       </div>
     </v-sheet>
 
+    <v-sheet v-if="store.completedCycles.length" class="app-surface pa-5 mb-5">
+      <TrophyShelf :cycles="store.completedCycles" :get-earned-points="store.getCycleEarnedPoints" />
+    </v-sheet>
+
+    <div v-if="store.historyEntries.length" class="parent-kicker mb-3">Monthly archives</div>
     <v-row v-if="store.historyEntries.length">
       <v-col v-for="entry in store.historyEntries" :key="entry.month" cols="12" md="6" xl="4">
         <v-card class="pa-5 h-100 app-surface parent-history-card">
@@ -70,6 +75,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
+import TrophyShelf from '../components/TrophyShelf.vue'
 import { formatMonthLabel } from '../lib/date'
 import { useAppStore } from '../stores/app'
 

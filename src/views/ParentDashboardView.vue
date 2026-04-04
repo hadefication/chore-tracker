@@ -1,5 +1,24 @@
 <template>
   <div class="parent-dashboard">
+    <v-alert
+      v-if="store.cycleGoalReached"
+      class="mb-5"
+      color="success"
+      icon="mdi-trophy"
+      prominent
+      variant="flat"
+    >
+      <div class="d-flex align-center justify-space-between flex-wrap ga-3">
+        <div>
+          <div class="text-h6 font-weight-bold">Goal reached!</div>
+          <div>{{ store.activeCycle?.rewardGoal }} — {{ store.cycleTotalPoints }} of {{ store.activeCycle?.goalTarget }} points</div>
+        </div>
+        <v-btn color="white" variant="flat" prepend-icon="mdi-gift-outline" @click="resolveDialogOpen = true">
+          Resolve & Set New Goal
+        </v-btn>
+      </div>
+    </v-alert>
+
     <v-sheet class="app-surface parent-command parent-dashboard-hero pa-5 mb-5">
       <div class="parent-command-grid">
         <div>
@@ -11,8 +30,8 @@
         </div>
         <div class="parent-meter parent-meter-wide">
           <div class="parent-meter-label">Points to goal</div>
-          <div class="parent-meter-value">{{ pointsToGoal }}</div>
-          <div class="parent-meter-subtitle">{{ metrics.totalPoints }} of {{ metrics.goalTarget }} approved</div>
+          <div class="parent-meter-value">{{ cyclePointsToGoal }}</div>
+          <div class="parent-meter-subtitle">{{ store.cycleTotalPoints }} of {{ store.activeCycle?.goalTarget ?? metrics.goalTarget }} (cycle)</div>
         </div>
       </div>
 
@@ -119,21 +138,47 @@
         </v-sheet>
       </v-col>
     </v-row>
+
+    <GoalResolutionDialog
+      v-if="store.activeCycle"
+      v-model="resolveDialogOpen"
+      :cycle="store.activeCycle"
+      :earned-points="store.cycleEarnedPoints"
+      :total-points="store.cycleTotalPoints"
+      :badge="resolutionBadge"
+      @resolve="handleResolve"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import GoalResolutionDialog from '../components/GoalResolutionDialog.vue'
+import { computeBadgeTier } from '../lib/badges'
 import { formatShortDate } from '../lib/date'
 import { useAppStore } from '../stores/app'
+import type { BadgeTier } from '../types/domain'
 
 const router = useRouter()
 const store = useAppStore()
+const resolveDialogOpen = ref(false)
 const metrics = computed(() => store.currentMonthMetrics)
-const pointsToGoal = computed(() => Math.max(metrics.value.goalTarget - metrics.value.totalPoints, 0))
+const cyclePointsToGoal = computed(() => {
+  const target = store.activeCycle?.goalTarget ?? metrics.value.goalTarget
+  return Math.max(target - store.cycleTotalPoints, 0)
+})
 const recentApproved = computed(() => store.approvedSubmissions.slice(0, 5))
 const recentRejected = computed(() => store.rejectedSubmissions.slice(0, 5))
+const resolutionBadge = computed<BadgeTier>(() => {
+  const cycle = store.activeCycle
+  if (!cycle) return 'standard'
+  return computeBadgeTier(store.approvedSubmissions, cycle, store.getMonthProfile)
+})
+
+async function handleResolve(payload: { rewardGoal: string; goalTarget: number; carryOver: boolean }) {
+  await store.resolveGoalCycle(payload.rewardGoal, payload.goalTarget, payload.carryOver)
+}
 const shortcuts = [
   { to: '/parent/approvals', icon: 'mdi-check-decagram-outline', title: 'Approvals', copy: 'Review the pending queue and clear blockers.' },
   { to: '/parent/library', icon: 'mdi-shape-outline', title: 'Library', copy: 'Add or tune chores and point values.' },

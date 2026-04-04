@@ -7,11 +7,13 @@ import { getCurrentMonthKey, getCurrentMonthKey as getLiveCurrentMonthKey, getMo
 import { createId } from '../lib/ids'
 import { createMonthlyArchiveSnapshot } from '../lib/archive'
 import { calculateMonthMetrics } from '../lib/metrics'
+import { computeBadgeTier } from '../lib/badges'
 import type {
   AppStateRecord,
   Chore,
   ChoreDraft,
   ChoreSubmission,
+  GoalCycle,
   MonthMetrics,
   MonthProfile,
   MonthlyArchive,
@@ -99,6 +101,7 @@ export const useAppStore = defineStore('app', () => {
   const submissions = ref<ChoreSubmission[]>([])
   const archives = ref<MonthlyArchive[]>([])
   const monthProfiles = ref<MonthProfile[]>([])
+  const goalCycles = ref<GoalCycle[]>([])
   const settings = ref<SettingsRecord>(defaultSettings())
   const appState = ref<AppStateRecord>(defaultAppState())
 
@@ -135,6 +138,26 @@ export const useAppStore = defineStore('app', () => {
       .map((month) => archiveMap.get(month) ?? createArchiveSnapshot(month))
   })
 
+  const activeCycle = computed(() => goalCycles.value.find((c) => c.completedAt === null) ?? null)
+  const completedCycles = computed(() =>
+    goalCycles.value
+      .filter((c) => c.completedAt !== null)
+      .sort((a, b) => (b.completedAt ?? '').localeCompare(a.completedAt ?? '')),
+  )
+  const cycleEarnedPoints = computed(() => {
+    const cycle = activeCycle.value
+    if (!cycle) return 0
+    return approvedSubmissions.value
+      .filter((s) => (s.reviewedAt ?? s.submittedAt) >= cycle.startedAt)
+      .reduce((sum, s) => sum + s.points, 0)
+  })
+  const cycleTotalPoints = computed(() => (activeCycle.value?.startingPoints ?? 0) + cycleEarnedPoints.value)
+  const cycleGoalReached = computed(() => {
+    const cycle = activeCycle.value
+    if (!cycle) return false
+    return cycleTotalPoints.value >= cycle.goalTarget
+  })
+
   function getMonthProfile(month: string): MonthProfile {
     return monthProfiles.value.find((profile) => profile.month === month) ?? createMonthProfile(month, settings.value)
   }
@@ -153,11 +176,12 @@ export const useAppStore = defineStore('app', () => {
   }
 
   async function loadState(): Promise<void> {
-    const [loadedChores, loadedSubmissions, loadedArchives, loadedProfiles, loadedSettings, loadedAppState] = await Promise.all([
+    const [loadedChores, loadedSubmissions, loadedArchives, loadedProfiles, loadedCycles, loadedSettings, loadedAppState] = await Promise.all([
       db.chores.toArray(),
       db.submissions.toArray(),
       db.monthlyArchive.toArray(),
       db.monthProfiles.toArray(),
+      db.goalCycles.toArray(),
       db.settings.get(SETTINGS_ID),
       db.appState.get(APP_STATE_ID),
     ])
@@ -166,6 +190,7 @@ export const useAppStore = defineStore('app', () => {
     submissions.value = sortSubmissions(loadedSubmissions)
     archives.value = sortArchives(loadedArchives)
     monthProfiles.value = loadedProfiles.sort((left, right) => right.month.localeCompare(left.month))
+    goalCycles.value = loadedCycles
     settings.value = loadedSettings ?? defaultSettings()
     appState.value = loadedAppState ?? defaultAppState()
     parentAuthenticated.value = hasParentSession()
@@ -187,6 +212,22 @@ export const useAppStore = defineStore('app', () => {
     if (!existingProfile) {
       const seed = existingSettings ?? defaultSettings()
       await db.monthProfiles.put(createMonthProfile(monthKey, seed))
+    }
+
+    const existingCycles = await db.goalCycles.toArray()
+    const hasActiveCycle = existingCycles.some((c) => c.completedAt === null)
+    if (!hasActiveCycle) {
+      const seed = existingSettings ?? defaultSettings()
+      const initialCycle: GoalCycle = {
+        id: createId(),
+        rewardGoal: seed.rewardGoal || '',
+        goalTarget: seed.monthlyGoal,
+        startedAt: nowIso(),
+        completedAt: null,
+        startingPoints: 0,
+        badge: null,
+      }
+      await db.goalCycles.put(initialCycle)
     }
   }
 
@@ -502,6 +543,56 @@ export const useAppStore = defineStore('app', () => {
     parentAuthenticated.value = false
   }
 
+  async function resolveGoalCycle(newRewardGoal: string, newGoalTarget: number, carryOver: boolean): Promise<void> {
+    const cycle = activeCycle.value
+    if (!cycle) {
+      throw new Error('No active goal cycle to resolve.')
+    }
+
+    const target = validatePositiveNumber(newGoalTarget, 'Goal target')
+    const name = newRewardGoal.trim()
+    if (!name) {
+      throw new Error('Reward goal name is required.')
+    }
+
+    const badge = computeBadgeTier(approvedSubmissions.value, cycle, getMonthProfile)
+    const now = nowIso()
+    const excess = Math.max(cycleTotalPoints.value - cycle.goalTarget, 0)
+
+    const completedCycle: GoalCycle = {
+      ...cycle,
+      completedAt: now,
+      badge,
+    }
+
+    const newCycle: GoalCycle = {
+      id: createId(),
+      rewardGoal: name,
+      goalTarget: target,
+      startedAt: now,
+      completedAt: null,
+      startingPoints: carryOver ? excess : 0,
+      badge: null,
+    }
+
+    await db.transaction('rw', db.goalCycles, async () => {
+      await db.goalCycles.put(completedCycle)
+      await db.goalCycles.put(newCycle)
+    })
+
+    goalCycles.value = [...goalCycles.value.filter((c) => c.id !== cycle.id), completedCycle, newCycle]
+  }
+
+  function getCycleEarnedPoints(cycle: GoalCycle): number {
+    const endAt = cycle.completedAt ?? '9999-12-31T23:59:59.999Z'
+    return approvedSubmissions.value
+      .filter((s) => {
+        const reviewedAt = s.reviewedAt ?? s.submittedAt
+        return reviewedAt >= cycle.startedAt && reviewedAt < endAt
+      })
+      .reduce((sum, s) => sum + s.points, 0)
+  }
+
   async function resetCurrentMonth(): Promise<void> {
     const month = currentMonth.value
     const targets = submissions.value.filter((entry) => getMonthKeyFromDate(entry.date) === month)
@@ -519,6 +610,7 @@ export const useAppStore = defineStore('app', () => {
     submissions,
     archives,
     monthProfiles,
+    goalCycles,
     settings,
     appState,
     currentMonth,
@@ -533,6 +625,11 @@ export const useAppStore = defineStore('app', () => {
     childRecentSubmissions,
     hasParentPin,
     historyEntries,
+    activeCycle,
+    completedCycles,
+    cycleEarnedPoints,
+    cycleTotalPoints,
+    cycleGoalReached,
     init,
     addChore,
     updateChore,
@@ -545,6 +642,8 @@ export const useAppStore = defineStore('app', () => {
     setParentPin,
     loginParent,
     logoutParent,
+    resolveGoalCycle,
+    getCycleEarnedPoints,
     resetCurrentMonth,
     getMonthProfile,
     getMonthMetrics,
