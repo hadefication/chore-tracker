@@ -586,6 +586,52 @@ export const useAppStore = defineStore('app', () => {
     goalCycles.value = [...goalCycles.value.filter((c) => c.id !== cycle.id), completedCycle, newCycle]
   }
 
+  function isMonthResolved(month: string): boolean {
+    const monthStart = `${month}-01T00:00:00.000Z`
+    const nextMonth = (() => {
+      const [y, m] = month.split('-').map(Number)
+      const d = new Date(y!, m!, 1)
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01T00:00:00.000Z`
+    })()
+
+    return goalCycles.value.some((c) => {
+      if (c.completedAt === null) return false
+      return c.startedAt < nextMonth && c.completedAt >= monthStart
+    })
+  }
+
+  async function resolveHistoricalMonth(month: string, rewardGoal: string): Promise<void> {
+    const profile = getMonthProfile(month)
+    const monthSubmissions = approvedSubmissions.value.filter(
+      (s) => getMonthKeyFromDate(s.date) === month,
+    )
+    const totalPoints = monthSubmissions.reduce((sum, s) => sum + s.points, 0)
+    const goalReached = totalPoints >= profile.goalTarget
+
+    const startedAt = `${month}-01T00:00:00.000Z`
+    const lastDay = monthSubmissions
+      .map((s) => s.reviewedAt ?? s.submittedAt)
+      .sort()
+      .pop() ?? startedAt
+
+    const cycle: GoalCycle = {
+      id: createId(),
+      rewardGoal: rewardGoal || profile.rewardGoal || '',
+      goalTarget: profile.goalTarget,
+      startedAt,
+      completedAt: lastDay,
+      startingPoints: 0,
+      badge: null,
+    }
+
+    if (goalReached) {
+      cycle.badge = computeBadgeTier(monthSubmissions, cycle, getMonthProfile)
+    }
+
+    await db.goalCycles.put(cycle)
+    goalCycles.value = [...goalCycles.value, cycle]
+  }
+
   function getCycleEarnedPoints(cycle: GoalCycle): number {
     const endAt = cycle.completedAt ?? '9999-12-31T23:59:59.999Z'
     return approvedSubmissions.value
@@ -646,6 +692,8 @@ export const useAppStore = defineStore('app', () => {
     loginParent,
     logoutParent,
     resolveGoalCycle,
+    isMonthResolved,
+    resolveHistoricalMonth,
     getCycleEarnedPoints,
     resetCurrentMonth,
     getMonthProfile,
