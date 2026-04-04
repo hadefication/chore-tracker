@@ -1,15 +1,25 @@
 <template>
   <v-dialog :model-value="modelValue" max-width="520" @update:model-value="$emit('update:modelValue', $event)">
     <v-card class="pa-6">
-      <v-card-title class="text-h5 font-weight-bold pa-0 mb-4">Resolve & Set New Goal</v-card-title>
+      <v-card-title class="text-h5 font-weight-bold pa-0 mb-4">
+        {{ goalReached ? 'Resolve & Set New Goal' : 'Close Cycle & Start New Goal' }}
+      </v-card-title>
 
-      <v-alert class="mb-5" color="success" variant="tonal">
+      <v-alert v-if="goalReached" class="mb-5" color="success" variant="tonal">
         <div class="font-weight-bold mb-1">Win summary</div>
         <div>Reward: <strong>{{ cycle.rewardGoal }}</strong></div>
         <div>Points earned: <strong>{{ earnedPoints }}</strong> of {{ cycle.goalTarget }} target</div>
         <div v-if="excessPoints > 0">Excess points: <strong>{{ excessPoints }}</strong></div>
         <div>Badge: <strong>{{ badgeLabel }}</strong></div>
         <div>Started: {{ formatDate(cycle.startedAt) }}</div>
+      </v-alert>
+
+      <v-alert v-else class="mb-5" color="warning" variant="tonal">
+        <div class="font-weight-bold mb-1">Cycle summary</div>
+        <div>Reward: <strong>{{ cycle.rewardGoal || 'Not set' }}</strong></div>
+        <div>Points earned: <strong>{{ totalPoints }}</strong> of {{ cycle.goalTarget }} target</div>
+        <div>Started: {{ formatDate(cycle.startedAt) }}</div>
+        <div class="mt-1 text-body-2">Goal was not reached. Closing this cycle to start fresh.</div>
       </v-alert>
 
       <v-text-field
@@ -28,9 +38,9 @@
       />
 
       <v-checkbox
-        v-if="excessPoints > 0"
+        v-if="totalPoints > 0"
         v-model="form.carryOver"
-        :label="`Carry over ${excessPoints} extra points`"
+        :label="excessPoints > 0 ? `Carry over ${excessPoints} extra points` : `Carry over ${totalPoints} points`"
       />
 
       <v-card-actions class="pa-0 mt-4 justify-space-between">
@@ -53,6 +63,7 @@ const props = defineProps<{
   earnedPoints: number
   totalPoints: number
   badge: BadgeTier
+  goalReached: boolean
 }>()
 
 const emit = defineEmits<{

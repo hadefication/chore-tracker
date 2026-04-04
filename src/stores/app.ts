@@ -141,7 +141,7 @@ export const useAppStore = defineStore('app', () => {
   const activeCycle = computed(() => goalCycles.value.find((c) => c.completedAt === null) ?? null)
   const completedCycles = computed(() =>
     goalCycles.value
-      .filter((c) => c.completedAt !== null)
+      .filter((c) => c.completedAt !== null && c.badge !== null)
       .sort((a, b) => (b.completedAt ?? '').localeCompare(a.completedAt ?? '')),
   )
   const cycleEarnedPoints = computed(() => {
@@ -555,9 +555,12 @@ export const useAppStore = defineStore('app', () => {
       throw new Error('Reward goal name is required.')
     }
 
-    const badge = computeBadgeTier(approvedSubmissions.value, cycle, getMonthProfile)
     const now = nowIso()
-    const excess = Math.max(cycleTotalPoints.value - cycle.goalTarget, 0)
+    const goalReached = cycleTotalPoints.value >= cycle.goalTarget
+    const badge = goalReached ? computeBadgeTier(approvedSubmissions.value, cycle, getMonthProfile) : null
+    const carryPoints = goalReached
+      ? Math.max(cycleTotalPoints.value - cycle.goalTarget, 0)
+      : cycleTotalPoints.value
 
     const completedCycle: GoalCycle = {
       ...cycle,
@@ -571,7 +574,7 @@ export const useAppStore = defineStore('app', () => {
       goalTarget: target,
       startedAt: now,
       completedAt: null,
-      startingPoints: carryOver ? excess : 0,
+      startingPoints: carryOver ? carryPoints : 0,
       badge: null,
     }
 

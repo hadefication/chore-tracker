@@ -32,6 +32,17 @@
           <div class="parent-meter-label">Points to goal</div>
           <div class="parent-meter-value">{{ cyclePointsToGoal }}</div>
           <div class="parent-meter-subtitle">{{ store.cycleTotalPoints }} of {{ store.activeCycle?.goalTarget ?? metrics.goalTarget }} (cycle)</div>
+          <v-btn
+            v-if="!store.cycleGoalReached"
+            class="mt-2"
+            color="warning"
+            prepend-icon="mdi-close-circle-outline"
+            size="small"
+            variant="tonal"
+            @click="resolveDialogOpen = true"
+          >
+            Close cycle early
+          </v-btn>
         </div>
       </div>
 
@@ -146,6 +157,7 @@
       :earned-points="store.cycleEarnedPoints"
       :total-points="store.cycleTotalPoints"
       :badge="resolutionBadge"
+      :goal-reached="store.cycleGoalReached"
       @resolve="handleResolve"
     />
   </div>
